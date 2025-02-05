@@ -1,5 +1,6 @@
 import React from "react";
 import { Settings, Volume2, VolumeX, Sun, Moon, Globe } from "lucide-react";
+import { useSound } from "./SoundProvider";
 import {
   Dialog,
   DialogContent,
@@ -30,19 +31,26 @@ const GameSettings = ({
   language,
   onLanguageChange,
 }) => {
+  const { playSound } = useSound();
+
   const textColor = isDark ? "text-violet-200" : "text-gray-700";
   const bgColor = isDark ? "bg-violet-950/95" : "bg-white/95";
   const borderColor = isDark ? "border-violet-500/20" : "border-violet-300/30";
   const dividerColor = isDark ? "bg-violet-500/20" : "bg-violet-300/20";
   const sliderBgColor = isDark ? "bg-violet-900/50" : "bg-violet-200/50";
   const sliderActiveColor = isDark ? "bg-violet-500" : "bg-violet-400";
-  // Adicione esta linha
   const inputBg = isDark ? "bg-white/10" : "bg-white/70";
+
+  const handleClick = (callback, ...args) => {
+    playSound("buttonClick");
+    callback(...args);
+  };
 
   return (
     <Dialog>
       <DialogTrigger asChild>
         <button
+          onClick={() => playSound("buttonClick")}
           className={`fixed top-4 right-4 w-12 h-12 rounded-full hover:bg-white/20 backdrop-blur-sm border ${borderColor} transition-all duration-300 group flex items-center justify-center z-50 ${
             isDark ? "bg-white/10" : "bg-white/30"
           }`}
@@ -82,7 +90,7 @@ const GameSettings = ({
               </div>
               <Switch
                 checked={!isMuted}
-                onCheckedChange={onMuteToggle}
+                onCheckedChange={() => handleClick(onMuteToggle)}
                 className="data-[state=checked]:bg-violet-500 h-6 w-11"
               />
             </div>
@@ -101,7 +109,9 @@ const GameSettings = ({
                   value={[volume]}
                   max={100}
                   step={1}
-                  onValueChange={([value]) => onVolumeChange(value)}
+                  onValueChange={([value]) =>
+                    handleClick(onVolumeChange, value)
+                  }
                   disabled={isMuted}
                   className="relative flex items-center select-none touch-none w-full h-8"
                 >
@@ -138,7 +148,7 @@ const GameSettings = ({
             </div>
             <Switch
               checked={isDark}
-              onCheckedChange={onThemeToggle}
+              onCheckedChange={() => handleClick(onThemeToggle)}
               className="data-[state=checked]:bg-violet-500 h-6 w-11"
             />
           </div>
@@ -159,7 +169,9 @@ const GameSettings = ({
                 min={15}
                 max={60}
                 step={5}
-                onValueChange={([value]) => onIntervalChange(value)}
+                onValueChange={([value]) =>
+                  handleClick(onIntervalChange, value)
+                }
                 className="relative flex items-center select-none touch-none w-full h-8"
               >
                 <span
@@ -179,13 +191,17 @@ const GameSettings = ({
               </Slider>
             </div>
           </div>
+
           {/* Language Toggle */}
           <div className="flex items-center justify-between h-14 px-2">
             <div className="flex items-center gap-3">
               <Globe className={`w-6 h-6 ${textColor}`} />
               <span className={`${textColor} text-lg`}>Language</span>
             </div>
-            <Select value={language} onValueChange={onLanguageChange}>
+            <Select
+              value={language}
+              onValueChange={(value) => handleClick(onLanguageChange, value)}
+            >
               <SelectTrigger
                 className={`w-32 ${inputBg} border-violet-500/30 ${textColor}`}
               >

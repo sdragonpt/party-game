@@ -7,7 +7,13 @@ import { Card } from "@/components/ui/card";
 import _ from "lodash";
 import { translations } from "../lib/translations";
 
-const ChallengeScreen = ({ players, onEndGame, isDark, language }) => {
+const ChallengeScreen = ({
+  players,
+  onEndGame,
+  challengeInterval = 30,
+  isDark,
+  language,
+}) => {
   const { playSound } = useSound();
   const [currentChallenge, setCurrentChallenge] = useState(null);
   const [timer, setTimer] = useState(null);
@@ -24,7 +30,6 @@ const ChallengeScreen = ({ players, onEndGame, isDark, language }) => {
     const males = players.filter((p) => p.gender === "male");
     const females = players.filter((p) => p.gender === "female");
 
-    // Get unique random players
     const getUniqueRandomPlayers = (count) => {
       const selectedPlayers = [];
       const tempPlayers = [...players];
@@ -41,36 +46,36 @@ const ChallengeScreen = ({ players, onEndGame, isDark, language }) => {
     return {
       randomMale: _.sample(males)?.name || "",
       randomFemale: _.sample(females)?.name || "",
-      randomPlayers: getUniqueRandomPlayers(3), // Get up to 3 unique random players
+      randomPlayers: getUniqueRandomPlayers(3),
       males,
       females,
     };
   };
 
   const generateChallenge = () => {
+    // Reset timer and hide it when generating a new challenge
+    setShowTimer(false);
+    setTimer(null);
+
     const { randomMale, randomFemale, randomPlayers, males, females } =
       getRandomPlayers();
     let challenge = _.sample(translations[language].challenges);
 
-    // Count how many of each type of placeholder we need
     const boyCount = (challenge.match(/{boy}/g) || []).length;
     const girlCount = (challenge.match(/{girl}/g) || []).length;
     const randomCount = (challenge.match(/\{\}/g) || []).length;
 
-    // Verify we have enough players of each gender
     if (boyCount > males.length || girlCount > females.length) {
-      generateChallenge(); // Try another challenge if we don't have enough players
+      generateChallenge();
       return;
     }
 
-    // Replace boy placeholders
     for (let i = 0; i < boyCount; i++) {
       const randomBoy =
         _.sample(males.filter((m) => !challenge.includes(m.name)))?.name || "";
       challenge = challenge.replace(/{boy}/, randomBoy);
     }
 
-    // Replace girl placeholders
     for (let i = 0; i < girlCount; i++) {
       const randomGirl =
         _.sample(females.filter((f) => !challenge.includes(f.name)))?.name ||
@@ -78,7 +83,6 @@ const ChallengeScreen = ({ players, onEndGame, isDark, language }) => {
       challenge = challenge.replace(/{girl}/, randomGirl);
     }
 
-    // Replace random player placeholders
     let playerIndex = 0;
     while (challenge.includes("{}") && playerIndex < randomPlayers.length) {
       challenge = challenge.replace(/\{\}/, randomPlayers[playerIndex]);
@@ -91,7 +95,7 @@ const ChallengeScreen = ({ players, onEndGame, isDark, language }) => {
 
   const startTimer = () => {
     setShowTimer(true);
-    setTimer(30);
+    setTimer(challengeInterval);
     playSound("timerTick");
   };
 

@@ -1,86 +1,129 @@
-// src/components/SoundProvider.jsx
-import React, { createContext, useContext, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Howl } from "howler";
 
-const SoundContext = createContext();
+// Create context outside of any component
+const SoundContext = createContext(null);
 
-export const sounds = {
-  buttonClick: new Howl({
-    src: ["/sounds/click.mp3"],
-    volume: 0.5,
-  }),
-  newChallenge: new Howl({
-    src: ["/sounds/new-challenge.mp3"],
-    volume: 0.7,
-  }),
-  startParty: new Howl({
-    src: ["/sounds/party-start.mp3"],
-    volume: 0.8,
-  }),
-  timerTick: new Howl({
-    src: ["/sounds/timer-tick.mp3"],
-    volume: 0.3,
-  }),
-  timerEnd: new Howl({
-    src: ["/sounds/timer-end.mp3"],
-    volume: 0.6,
-  }),
-  addPlayer: new Howl({
-    src: ["/sounds/player-added.mp3"],
-    volume: 0.4,
-  }),
+// Sound creation helper
+const createSound = (src, defaultVolume = 0.5) => {
+  try {
+    return new Howl({
+      src: [src],
+      volume: defaultVolume,
+      preload: true,
+      html5: true,
+      onloaderror: (id, error) =>
+        console.error(`Error loading sound: ${src}`, error),
+      onplayerror: (id, error) =>
+        console.error(`Error playing sound: ${src}`, error),
+    });
+  } catch (error) {
+    console.error(`Error creating Howl instance for ${src}:`, error);
+    return null;
+  }
 };
 
-export const SoundProvider = ({ children }) => {
-  const [isMuted, setIsMuted] = React.useState(false);
-  const [volume, setVolume] = React.useState(0.7);
+// Main Provider Component
+const SoundProvider = React.memo(function SoundProviderComponent({ children }) {
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.7);
+  const soundsRef = useRef({});
 
   useEffect(() => {
-    // Atualiza o volume de todos os sons quando muda
-    Object.values(sounds).forEach((sound) => {
-      sound.volume(isMuted ? 0 : volume);
+    soundsRef.current = {
+      buttonClick: createSound("/sounds/click.mp3", 0.5),
+      newChallenge: createSound("/sounds/new-challenge.mp3", 0.7),
+      startParty: createSound("/sounds/party-start.mp3", 0.8),
+      timerTick: createSound("/sounds/timer-tick.mp3", 0.3),
+      timerEnd: createSound("/sounds/timer-end.mp3", 0.6),
+      addPlayer: createSound("/sounds/player-added.mp3", 0.4),
+    };
+
+    return () => {
+      Object.values(soundsRef.current).forEach((sound) => {
+        if (sound && sound.unload) {
+          sound.unload();
+        }
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    Object.values(soundsRef.current).forEach((sound) => {
+      if (sound) {
+        sound.volume(isMuted ? 0 : volume);
+      }
     });
   }, [volume, isMuted]);
 
-  const playSound = (soundName) => {
-    if (!isMuted && sounds[soundName]) {
-      sounds[soundName].play();
-    }
-  };
+  const playSound = React.useCallback(
+    (soundName) => {
+      if (!isMuted && soundsRef.current[soundName]) {
+        try {
+          soundsRef.current[soundName].play();
+        } catch (error) {
+          console.error(`Error playing sound ${soundName}:`, error);
+        }
+      }
+    },
+    [isMuted]
+  );
 
-  const stopSound = (soundName) => {
-    if (sounds[soundName]) {
-      sounds[soundName].stop();
+  const stopSound = React.useCallback((soundName) => {
+    if (soundsRef.current[soundName]) {
+      try {
+        soundsRef.current[soundName].stop();
+      } catch (error) {
+        console.error(`Error stopping sound ${soundName}:`, error);
+      }
     }
-  };
+  }, []);
 
-  const stopAllSounds = () => {
-    Object.values(sounds).forEach((sound) => sound.stop());
-  };
+  const stopAllSounds = React.useCallback(() => {
+    Object.values(soundsRef.current).forEach((sound) => {
+      if (sound && sound.stop) {
+        try {
+          sound.stop();
+        } catch (error) {
+          console.error("Error stopping sound:", error);
+        }
+      }
+    });
+  }, []);
+
+  const value = React.useMemo(
+    () => ({
+      playSound,
+      stopSound,
+      stopAllSounds,
+      isMuted,
+      setIsMuted,
+      volume,
+      setVolume,
+    }),
+    [playSound, stopSound, stopAllSounds, isMuted, volume]
+  );
 
   return (
-    <SoundContext.Provider
-      value={{
-        playSound,
-        stopSound,
-        stopAllSounds,
-        isMuted,
-        setIsMuted,
-        volume,
-        setVolume,
-      }}
-    >
-      {children}
-    </SoundContext.Provider>
+    <SoundContext.Provider value={value}>{children}</SoundContext.Provider>
   );
-};
+});
 
-export const useSound = () => {
+// Custom hook as a separate named function
+function useSound() {
   const context = useContext(SoundContext);
   if (!context) {
     throw new Error("useSound must be used within a SoundProvider");
   }
   return context;
-};
+}
 
-export default SoundProvider;
+// Export everything separately
+export { SoundProvider };
+export { useSound };

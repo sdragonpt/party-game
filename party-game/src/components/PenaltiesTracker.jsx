@@ -1,8 +1,11 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Beer } from "lucide-react";
+import { useSound } from "./SoundProvider";
 
 const PenaltiesTracker = ({ players, penalties, onPenaltyAdd, isDark }) => {
+  const { playSound } = useSound();
+
   const bgColor = isDark
     ? "from-violet-950 to-violet-950/80"
     : "from-white/80 to-white/90";
@@ -13,6 +16,11 @@ const PenaltiesTracker = ({ players, penalties, onPenaltyAdd, isDark }) => {
   const buttonBg = isDark
     ? "bg-violet-500/50 hover:bg-violet-500"
     : "bg-violet-400/50 hover:bg-violet-400";
+
+  const handlePenaltyClick = (playerId) => {
+    playSound("buttonClick");
+    onPenaltyAdd(playerId);
+  };
 
   return (
     <motion.div
@@ -41,7 +49,7 @@ const PenaltiesTracker = ({ players, penalties, onPenaltyAdd, isDark }) => {
               </div>
 
               <button
-                onClick={() => onPenaltyAdd(player.id)}
+                onClick={() => handlePenaltyClick(player.id)}
                 className={`p-2 rounded-full ${buttonBg} transition-colors duration-300`}
               >
                 <Beer size={16} className="text-white" />

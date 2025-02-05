@@ -5,7 +5,6 @@ import PartyGame from "./components/PartyGame";
 import ChallengeScreen from "./components/ChallengeScreen";
 import PenaltiesTracker from "./components/PenaltiesTracker";
 import GameSettings from "./components/GameSettings";
-import { translations } from "./lib/translations";
 
 const App = () => {
   const [gameStarted, setGameStarted] = useState(false);
@@ -14,7 +13,7 @@ const App = () => {
   const [settings, setSettings] = useState({
     isMuted: false,
     volume: 70,
-    isDark: false, // Light mode por default
+    isDark: false,
     challengeInterval: 30,
     language: "en",
   });
@@ -27,11 +26,15 @@ const App = () => {
   };
 
   const handleSettingsChange = (key, value) => {
-    console.log("Setting changed:", key, value); // Debug
     setSettings((prev) => ({
       ...prev,
       [key]: value,
     }));
+  };
+
+  const handleEndGame = () => {
+    setGameStarted(false);
+    setPenalties({}); // Reset penalties when ending the game
   };
 
   useEffect(() => {
@@ -71,25 +74,29 @@ const App = () => {
           }}
         />
 
-        <GameSettings
-          {...settings}
-          onMuteToggle={() =>
-            handleSettingsChange("isMuted", !settings.isMuted)
-          }
-          onVolumeChange={(value) => handleSettingsChange("volume", value)}
-          onThemeToggle={() => handleSettingsChange("isDark", !settings.isDark)}
-          onIntervalChange={(value) =>
-            handleSettingsChange("challengeInterval", value)
-          }
-          onLanguageChange={(value) => handleSettingsChange("language", value)} // Adicione esta linha
-        />
-
         <div className="max-w-md mx-auto min-h-screen relative">
           <div
             className={`absolute inset-0 ${bgOverlay} pointer-events-none`}
           />
 
           <div className="relative">
+            <GameSettings
+              {...settings}
+              onMuteToggle={() =>
+                handleSettingsChange("isMuted", !settings.isMuted)
+              }
+              onVolumeChange={(value) => handleSettingsChange("volume", value)}
+              onThemeToggle={() =>
+                handleSettingsChange("isDark", !settings.isDark)
+              }
+              onIntervalChange={(value) =>
+                handleSettingsChange("challengeInterval", value)
+              }
+              onLanguageChange={(value) =>
+                handleSettingsChange("language", value)
+              }
+            />
+
             {!gameStarted ? (
               <PartyGame
                 onStart={() => setGameStarted(true)}
@@ -102,7 +109,7 @@ const App = () => {
               <>
                 <ChallengeScreen
                   players={players}
-                  onEndGame={() => setGameStarted(false)}
+                  onEndGame={handleEndGame}
                   challengeInterval={settings.challengeInterval}
                   isDark={settings.isDark}
                   language={settings.language}
